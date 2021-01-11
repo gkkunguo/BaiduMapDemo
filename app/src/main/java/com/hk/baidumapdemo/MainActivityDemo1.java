@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.baidu.mapapi.map.MapView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivityDemo1 extends AppCompatActivity {
     private MapView mMapView = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
