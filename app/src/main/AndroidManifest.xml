@@ -8,11 +8,11 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /> <!-- 读取外置存储。如果开发者使用了So动态加载功能并且把SO文件放在了外置存储区域，则需要申请该权限，否则不需要 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> <!-- 写外置存储。如果开发者使用了离线地图，并且数据写在外置存储区域，则需要申请该权限 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- 以下两个权限用于Demo中定位功能展示，如果开发者实际不需要百度定位功能，可不申请 -->
-    <!-- 这个权限用于进行网络定位 -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> <!-- 这个权限用于访问GPS定位 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- 用于AR步行导航，需要使用相机权限，如果不需要AR歩导，则不需申请该权限 -->
     <uses-permission android:name="android.permission.CAMERA" /> <!-- 用于步骑行导航Demo中振动效果提示，开发者根据自己业务需求决定是否申请 -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <application
         android:name=".App"

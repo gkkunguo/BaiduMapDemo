@@ -1,12 +1,17 @@
 package com.hk.baidumapdemo;
 
+import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
@@ -20,9 +25,16 @@ import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
+import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.Overlay;
 import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.utils.CoordinateConverter;
+import java.util.ArrayList;
+import java.util.List;
+
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 public class BaiduActivityDemo2 extends AppCompatActivity implements BaiduMap.OnMarkerClickListener, BaiduMap.OnMapClickListener {
     private MapView mMapView;
@@ -30,14 +42,37 @@ public class BaiduActivityDemo2 extends AppCompatActivity implements BaiduMap.On
     private final static String MAP_TITLE = "MAP_TITLE";
     private final static String MAP_CONTENT = "MAP_CONTENT";
     private View showInfoWindow;
+    private List<LatLng> points = new ArrayList<>();//轨迹经纬度
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_baidu_demo2);
+        requestPermission();
         initView();
         initMap();
         initLocationOption();
+
+    }
+
+    private void requestPermission(){
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1001);
+        }
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1002);
+        }
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1003);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode == 1001){
+            Toast.makeText(this, "申请成功", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void initView(){
@@ -59,7 +94,6 @@ public class BaiduActivityDemo2 extends AppCompatActivity implements BaiduMap.On
             }
         });
     }
-
     /**
      * 初始化定位参数配置
      */
@@ -140,26 +174,68 @@ public class BaiduActivityDemo2 extends AppCompatActivity implements BaiduMap.On
             //获取定位类型、定位错误返回码，具体信息可参照类参考中BDLocation类中的说明
             int errorCode = location.getLocType();
 
-            BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromResource(R.drawable.map_lvl_ld_loc);
-            LatLng point = new LatLng( latitude,longitude);
+            LatLng latLng = new LatLng( latitude,longitude);
+            drawLine(location,latLng);
+
+        }
+    }
 
 
-            OverlayOptions option = new MarkerOptions()
-                    .position(point)//标注位置
-                    .icon(bitmapDescriptor)//图标
+    private void drawLine(BDLocation location,LatLng latLng){
+        Toast.makeText(this,"latLng="+latLng.latitude,Toast.LENGTH_LONG).show();
+        points.add(latLng);
+        // 标注当前位置
+        CoordinateConverter converts = new CoordinateConverter();
+        converts.coord(latLng);
+        converts.from(CoordinateConverter.CoordType.COMMON);
+        LatLng curLatLng = converts.convert();
+        MyLocationData mylocData = new MyLocationData.Builder()
+                .accuracy(location.getRadius())
+                .direction(location.getDirection())
+                .speed(location.getSpeed())
+                .latitude(curLatLng.latitude)
+                .longitude(curLatLng.longitude)
+                .build();
+        mBaiduMap.setMyLocationData(mylocData);
+
+        //开始位置
+        BitmapDescriptor bitmapDescriptorStart = BitmapDescriptorFactory.fromResource(R.drawable.map_lvl_ld_start);
+        OverlayOptions optionStart = new MarkerOptions()
+                .position(points.get(0))//标注位置
+                .icon(bitmapDescriptorStart)//图标
+                .animateType(MarkerOptions.MarkerAnimateType.jump)//动画类型
+                .perspective(true)//是否开启近大远小效果
+                .zIndex(900)//设置覆盖物的zIndex
+                ;
+        Overlay overlay = mBaiduMap.addOverlay(optionStart);
+        // TODO: 2021/1/13 标注携带参数
+        Bundle bundle = new Bundle();
+        bundle.putString(MAP_TITLE,"marker标题");//传入需要使用的标注信息，当点击该标注时可以取出该标注对应的值进行相应的业务处理
+        bundle.putString(MAP_CONTENT,"这是marker展示的信息");
+        overlay.setExtraInfo(bundle);
+
+        if(points.size() >= 2 ){
+            //轨迹过程中的线
+            OverlayOptions mOverlayOptions = new PolylineOptions()
+                    .width(5)//折线宽度
+                    .color(0xAAFF0000)//折线颜色
+                    .dottedLine(true)
+                    .points(points);
+            Overlay mPolyline = mBaiduMap.addOverlay(mOverlayOptions);
+
+            //当前位置
+            BitmapDescriptor bitmapDescriptorNow = BitmapDescriptorFactory.fromResource(R.drawable.map_lvl_ld_loc);
+            OverlayOptions optionNow = new MarkerOptions()
+                    .position(points.get(points.size()-1))//标注位置 取得最后一个点数据
+                    .icon(bitmapDescriptorNow)//图标
                     .animateType(MarkerOptions.MarkerAnimateType.jump)//动画类型
                     .perspective(true)//是否开启近大远小效果
                     .zIndex(900)//设置覆盖物的zIndex
                     ;
-            Overlay overlay = mBaiduMap.addOverlay(option);
 
-            // TODO: 2021/1/13 标注携带参数
-            Bundle bundle = new Bundle();
-            bundle.putString(MAP_TITLE,"marker标题");//传入需要使用的标注信息，当点击该标注时可以取出该标注对应的值进行相应的业务处理
-            bundle.putString(MAP_CONTENT,"这是marker展示的信息");
-            overlay.setExtraInfo(bundle);
-
+            Overlay overlayNow = mBaiduMap.addOverlay(optionNow);
         }
+
     }
 
     @Override
