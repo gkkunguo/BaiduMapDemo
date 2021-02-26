@@ -34,6 +34,8 @@
             android:name="com.baidu.lbsapi.API_KEY"
             android:value="UTD7je6hbmM2bmUGoUlutmi4lIRVf5E3" /> <!-- BaiduLoc Service -->
         <activity android:name=".BaiduActivityDemo1"></activity>
+
+        <service android:name="com.baidu.location.f" android:enabled="true" android:process=":remote"></service>
     </application>
 
 </manifest>
